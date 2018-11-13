@@ -1,4 +1,4 @@
 ---
 
 - include_role:
-    name: "t18s.fr_{{ ansible_system }}_firewall"
+    name: "t18s.fr_{{ ansible_facts['system'] }}_firewall"
