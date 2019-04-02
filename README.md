@@ -6,16 +6,18 @@ An Ansible role that wraps the distribution/OS specific firewall installation ro
 
 Available common variables are listed below, along with default values (see `defaults/main.yml`):
 
-    firewal_ipv4_block_allcast: True        # block all *cast packets
+    firewall_ipv4_block_allcast: True        # block all *cast packets
     
 If all multicast, broadcast, anycast should be blocked, leave this variable `True`.
-    
-    firewal_ipv4_blacklist: []              # a list of blacklisted IPv4 addresses
-    firewal_ipv6_blacklist: []              # a list of blacklisted IPv6 addresses
+
+    firewall_ipv4_whitelist: []              # a list of whitelisted IPv4 addresses
+    firewall_ipv6_whitelist: []              # a list of whitelisted IPv6 addresses    
+    firewall_ipv4_blacklist: []              # a list of blacklisted IPv4 addresses
+    firewall_ipv6_blacklist: []              # a list of blacklisted IPv6 addresses
     
 The lists of blacklisted IP addresses.
     
-    firewal_ssh_port: 22                    # the port of the SSH server
+    firewall_ssh_port: 22                    # the port of the SSH server
     
 Because the access to a remote machine need to be secured, the SSH port must be let open. 
     
