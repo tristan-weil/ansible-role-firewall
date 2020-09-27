@@ -1,0 +1,41 @@
+---
+
+- hosts: all
+  name: 'Converge'
+  become: True
+  vars:
+    __verify_firewall_rules:
+      - port: '53'
+        proto: 'udp'
+        family: 'inet'
+        state: 'deny'
+        from: 'any'
+        to: 'any'
+
+      - port: '666'
+        proto: 'tcp'
+        family: 'inet'
+        state: 'allow'
+        from: 'any'
+        to: 'any'
+
+  tasks:
+    - block:
+        - name: 'check backports exists'
+          lineinfile:
+            path: '/etc/apt/sources.list'
+            line: 'deb https://deb.debian.org/debian/ buster-backports main contrib non-free'
+            owner: 'root'
+            group: 'root'
+            mode: '0644'
+
+        - name: 'update apt cache'
+          apt:
+            update_cache: True
+          changed_when: False
+      when: ansible_facts['os_family'] == "Debian"
+
+    - import_role:
+        name: 'ansible-role-firewall'
+      vars:
+        firewall_rules: "{{ _firewall_default_rules | union(__verify_firewall_rules) }}"

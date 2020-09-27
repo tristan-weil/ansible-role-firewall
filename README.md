@@ -1,54 +1,101 @@
 # Ansible Role: firewall
 
-An Ansible role that wraps the distribution/OS specific firewall installation role for Debian and OpenBSD.
+An Ansible Role that allows to configure a firewall.
+
+**NOTE**: it does not work on Docker.
+
+**NOTE**: Ansible needs Python3 on Debian.
+
+[![Actions Status](https://github.com/tristan-weil/ansible-role-firewall/workflows/molecule/badge.svg?branch=master)](https://github.com/tristan-weil/ansible-role-firewall/actions)
 
 ## Role Variables
 
-Available common variables are listed below, along with default values (see `defaults/main.yml`):
+Available variables are listed below, (see also `defaults/main.yml`).
 
-    firewall_ipv4_block_allcast: True        # block all *cast packets
-    
-If all multicast, broadcast, anycast should be blocked, leave this variable `True`.
+Mandatory variables:
 
-    firewall_ipv4_whitelist: []              # a list of whitelisted IPv4 addresses
-    firewall_ipv6_whitelist: []              # a list of whitelisted IPv6 addresses    
-    firewall_ipv4_blacklist: []              # a list of blacklisted IPv4 addresses
-    firewall_ipv6_blacklist: []              # a list of blacklisted IPv6 addresses
-    
-The lists of blacklisted IP addresses.
-    
-    firewall_ssh_port: 22                    # the port of the SSH server
-    
-Because the access to a remote machine need to be secured, the SSH port must be let open. 
-    
-For specific variables, see the distrib role.
+| Variable      | Description |
+| :------------ | :---------- |
 
-## Dependencies
+Optional variables:
 
-None.
+| Variable      | Default | Description |
+| :------------ | :------ | :---------- |
+| firewall_sysctl | {{ _firewall_default_sysctl }} | a list of <*firewall_systcl*> |
+| firewall_rules | {{ _firewall_default_rules }} | a list of <*firewall_rule*> |
+| firewall_whitelist | [] | a list of IPv4 or IPv6 that are whitelisted |
+| firewall_sshguard_enabled | True | *True / False*: enabe support for `sshguard` |
+
+### <*firewall_sysctl*>
+
+A *firewall_sysctl* represents a `sysctl` key/value.
+
+Mandatory variables:
+
+| Variable      | Description |
+| :------------ | :---------- |
+| name          | the name of the `sysctl` parameter |
+| value         | the value of the `sysctl` parameter |
+
+Optional variables:
+
+| Variable      | Default | Description |
+| :------------ | :------ | :---------- |
+
+### <*firewall_rule*>
+
+A *firewall_rule* represents a firewallD rule.
+
+The variables and the values are the same for all platforms (see `vars/main.yml`).
+
+Mandatory variables:
+
+| Variable      | Description |
+| :------------ | :---------- |
+| from          | *any / ip[/mask]*: the CIDR of the originating packet |
+| port          | the port    |
+| proto         | *tcp / udp / icmp / icmp6* : the IP protocol |
+| family        | *inet / inet6*: the IP family |
+
+Optional variables:
+
+| Variable      | Default | Description |
+| :------------ | :------ | :---------- |
+| state         | allow   | *allow / deny*: the action to choose when a packet is matched |
+| service       |         | the name of a service (if set other options are not used) | 
+| to            |         | *any / ip[/mask]*: the CIDR of the destination packet |
+| on            |         | the name of the interface |
+| source_port   |         | the source port |
 
 ## Example Playbook
 
-None (see distrib role).
+    - hosts: 'webservers'
+      vars:
+        my_custom_rules:
+          - port: '80'
+            direction: in
+            proto: tcp
+            family: "{{ _firewall_translations['inet'] }}"
+            state: "{{ _firewall_translations['deny'] }}"
+            from: "{{ _firewall_translations['any'] }}"
+            to: "{{ _firewall_translations['any'] }}"
+
+      roles:
+        - role: 'ansible-role-firewall'
+          firewall_rules: "{{ firewall_default_rules | union(__firewall_rules) }}"
               
 ## Todo
 
-Make it available for OpenBSD.
+None.
+
+## Dependencies
+
+See [requirements_galaxy.yml](https://github.com/tristan-weil/ansible-role-firewall/blob/master/requirements_galaxy.yml)
+
+## Supported platforms
+
+See [meta/main.yml](https://github.com/tristan-weil/ansible-role-firewall/blob/master/meta/main.yml)
 
 ## License
 
-```
-Copyright (c) 2018, 2019 Tristan Weil <titou@lab.t18s.fr>
-
-Permission to use, copy, modify, and distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-```
+See [LICENSE.md](https://github.com/tristan-weil/ansible-role-firewall/blob/master/LICENSE.md)

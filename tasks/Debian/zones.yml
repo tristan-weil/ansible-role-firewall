@@ -1,0 +1,22 @@
+---
+
+- name: 'get the list of zones'
+  set_fact:
+    __firewall_firewalld_zones_list: >-
+      {% set results = [] -%}
+      {% for s in firewall_firewalld_interfaces_in_zones -%}
+      {% set dummy = results.append(s.zone) -%}
+      {% endfor -%}
+      {% if results | length == 0 -%}
+      {% set dummy = results.append('public') -%}
+      {% endif -%}
+      {{ results }}
+
+- name: 'add interface to zone'
+  firewalld:
+    state: "{{ _firewall_translations[item.state | default('allow')] }}"
+    interface: "{{ item.1 }}"
+    zone: "{{ item.0.zone }}"
+    permanent: True
+    immediate: True
+  loop: "{{ firewall_firewalld_interfaces_in_zones | subelements('interfaces', skip_missing=True) }}"

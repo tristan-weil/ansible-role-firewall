@@ -1,4 +1,9 @@
 ---
 
-- include_role:
-    name: "t18s.fr_{{ ansible_facts['system'] }}_firewall"
+- include_tasks: 'sysctl.yml'
+
+- include_tasks: 'prepare_rules.yml'
+
+- include_tasks: "{{ ansible_facts['os_family'] }}/main.yml"
+
+- meta: 'flush_handlers'

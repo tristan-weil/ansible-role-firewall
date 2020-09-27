@@ -1,0 +1,25 @@
+---
+
+- hosts: all
+  name: 'Verify'
+  become: True
+  gather_facts: True
+  vars:
+    __verify_service_by_os_family:
+      Debian: 'firewalld'
+      OpenBSD: 'pflogd'
+
+  tasks:
+    - name: 'Check service is enabled/started'
+      service:
+        name: "{{ __verify_service_by_os_family[ ansible_facts['os_family'] ] }}"
+        enabled: True
+        state: 'started'
+      register: __verify_svc
+      failed_when: __verify_svc.changed
+
+    - name: 'Ping external host'
+      shell: |
+        ping -c 4 www.google.com
+      register: __verify_cmd
+      failed_when: not __verify_cmd.rc == 0

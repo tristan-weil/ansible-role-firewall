@@ -1,0 +1,9 @@
+---
+
+- include_tasks: 'service.yml'
+
+- include_tasks: 'zones.yml'
+
+- include_tasks: '../prepare_rules.yml'
+
+- include_tasks: 'rules.yml'

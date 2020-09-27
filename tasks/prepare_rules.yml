@@ -1,0 +1,84 @@
+---
+
+- name: 'prepare rules'
+  set_fact:
+    __firewall_prepared_rules: >-
+      {% set result = [] -%}
+      {% for wl in firewall_whitelist -%}
+      {%    set family = 'ipv4' -%}
+      {%    if wl | ipv4 -%}
+      {%      set family = 'ipv4' -%}
+      {%    elif wl | ipv6 -%}
+      {%      set family = 'ipv6' -%}
+      {%    else -%}
+      {%      set family = 'none' -%}
+      {%    endif -%}
+      {%    if family != 'none' -%}
+      {%      set item = {} -%}
+      {%      set dummy = item.update({'state': 'allow'}) -%}
+      {%      set dummy = item.update({'family': family}) -%}
+      {%      set dummy = item.update({'proto': 'tcp'}) -%}
+      {%      set dummy = item.update({'from': wl}) -%}
+      {%      set dummy = result.append(item) -%}
+      {%      set item = {} -%}
+      {%      set dummy = item.update({'state': 'allow'}) -%}
+      {%      set dummy = item.update({'family': family}) -%}
+      {%      set dummy = item.update({'proto': 'udp'}) -%}
+      {%      set dummy = item.update({'from': wl}) -%}
+      {%      set dummy = result.append(item) -%}
+      {%    endif -%}
+      {% endfor -%}
+      {% for rule in firewall_rules -%}
+      {%    set item = {} -%}
+      {%    set dummy = item.update({'state': rule.state | default('allow')}) -%}
+      {%    set dummy = item.update({'family': rule.family}) -%}
+      {%    set dummy = item.update({'proto': rule.proto}) -%}
+      {%    if rule.proto == 'icmp' or rule.proto == 'icmp6' -%}
+      {%      set dummy = item.update({'icmp_type': rule.icmp_type}) -%}
+      {%    else -%}
+      {%      if rule.port is defined -%}
+      {%        set dummy = item.update({'port': rule.port}) -%}
+      {%      endif -%}
+      {%    endif -%}
+      {%    if rule.from is not defined -%}
+      {%      if rule.family == 'inet' -%}
+      {%        set dummy = item.update({'from': any}) -%}
+      {%      elif rule.family == 'inet6' -%}
+      {%        set dummy = item.update({'from': any6}) -%}
+      {%      endif -%}
+      {%    else -%}
+      {%      set dummy = item.update({'from': rule.from}) -%}
+      {%    endif -%}
+      {%    if rule.to is not defined -%}
+      {%      if rule.family == 'inet' -%}
+      {%        set dummy = item.update({'to': any}) -%}
+      {%      elif rule.family == 'inet6' -%}
+      {%        set dummy = item.update({'to': any6}) -%}
+      {%      endif -%}
+      {%    else -%}
+      {%      set dummy = item.update({'to': rule.to}) -%}
+      {%    endif -%}
+      {%    if rule.limit is defined -%}
+      {%      set dummy = item.update({'limit': rule.limit}) -%}
+      {%    endif -%}
+      {%    if rule.interface is defined -%}
+      {%      set dummy = item.update({'interface': rule.interface}) -%}
+      {%    endif -%}
+      {%    set one_rule = 'true' -%}
+      {%    if rule.zone is defined -%}
+      {%      set dummy = item.update({'zone': rule.zone}) -%}
+      {%    else -%}
+      {%      if __firewall_firewalld_zones_list | default([]) | length > 0 -%}
+      {%        set one_rule = 'false' -%}
+      {%      endif -%}
+      {%      for zone in __firewall_firewalld_zones_list | default([]) -%}
+      {%        set zone_item = item.copy() -%}
+      {%        set dummy = zone_item.update({'zone': zone}) -%}
+      {%        set dummy = result.append(zone_item) -%}
+      {%      endfor -%}
+      {%    endif -%}
+      {%    if one_rule == 'true' -%}
+      {%      set dummy = result.append(item) -%}
+      {%    endif -%}
+      {% endfor -%}
+      {{ result }}

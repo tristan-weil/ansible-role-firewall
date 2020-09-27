@@ -1,0 +1,29 @@
+---
+
+- name: 'firewall_OpenBSD_reload_handler'
+  listen: 'network_reload_listener'
+  command: 'pfctl -f /etc/pf.conf'
+  when: >
+    ansible_facts['os_family'] == "OpenBSD"
+
+# executed first
+- name: 'firewall_Debian_reload1_handler'
+  listen: 'network_reload_listener'
+  service_facts:
+  when: >
+    ansible_facts['os_family'] == "Debian"
+    and (
+      not 'services' in ansible_facts
+      or not 'firewalld.service' in ansible_facts['services']
+    )
+
+# so we can check if its enable
+- name: 'firewall_Debian_reload2_handler'
+  listen: 'network_reload_listener'
+  service:
+    name: 'firewalld'
+    state: 'reloaded'
+  when: >
+    ansible_facts['os_family'] == "Debian"
+    and 'services' in ansible_facts
+    and 'firewalld.service' in ansible_facts['services']

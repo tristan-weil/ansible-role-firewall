@@ -1,0 +1,63 @@
+---
+
+- name: 'configure services'
+  firewalld:
+    service: "{{ item.name }}"
+    state: "{{ _firewall_translations[item.state] }}"
+    zone: "{{ item.zone | default('public') }}"
+    permanent: True
+  loop: "{{ firewall_firewalld_services }}"
+
+- name: 'add rules (rich)'
+  firewalld:
+    rich_rule: >-
+      rule
+      family="{{ _firewall_translations[item.family] }}"
+      source address="{{ _firewall_translations[item.from] | default(item.from) }}"
+      {% if item.port is defined %}port port="{{ item.port }}" protocol="{{ item.proto }}"{% endif %}
+      {% if item.source_port is defined %}source-port port="{{ item.source_port }}" protocol="{{ item.proto }}"{% endif %}
+      {% if item.to is defined %}destination address="{{ _firewall_translations[item.to] | default(item.to) }}"{% endif %}
+      {% if item.limit is defined %}limit value="{{ item.limit }}"{% endif %}
+      accept
+    state: "{{ _firewall_translations[item.state] }}"
+    zone: "{{ item.zone }}"
+    permanent: True
+    immediate: True
+  when: >
+    item.proto != "icmp"
+    and item.proto != "icmp6"
+    and item.zone is defined
+  loop: "{{ __firewall_prepared_rules }}"
+
+- name: 'add icmp type to icmp_block'
+  firewalld:
+    icmp_block: "{{ _firewall_translations['icmp_type'][item.icmp_type] }}"
+    state: "{{ _firewall_translations[item.state] }}"
+    zone: "{{ item.zone }}"
+    permanent: True
+    immediate: True
+  when: >
+    item.proto == "icmp"
+    or item.proto == "icmp6"
+  loop: "{{ __firewall_prepared_rules }}"
+
+- name: 'enable sshguard'
+  firewalld:
+    rich_rule: |
+      rule source ipset={{ item[1] }} drop
+    state: "{% if firewall_sshguard_enabled %}enabled{% else %}disabled{% endif %}"
+    zone: "{{ item[0] }}"
+    permanent: True
+  loop: "{{ lookup('nested', __firewall_firewalld_zones_list, ['sshguard4', 'sshguard6']) }}"
+  notify:
+    - 'firewall_Debian_reload1_handler'
+    - 'firewall_Debian_reload2_handler'
+
+- name: 'enable icmp type'
+  firewalld:
+    zone: "{{ item }}"
+    state: 'enabled'
+    icmp_block_inversion: 'yes'
+    permanent: True
+    immediate: True
+  loop: "{{ __firewall_firewalld_zones_list }}"

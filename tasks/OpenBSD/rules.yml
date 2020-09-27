@@ -1,0 +1,12 @@
+---
+
+- name: 'update pf.conf'
+  template:
+    src: 'OpenBSD/pf.conf.j2'
+    dest: '/etc/pf.conf'
+    owner: 'root'
+    group: 'wheel'
+    mode: '0600'
+    validate: 'pfctl -nf %s'
+  notify:
+    - 'firewall_OpenBSD_reload_handler'

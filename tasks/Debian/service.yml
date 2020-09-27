@@ -1,0 +1,19 @@
+---
+
+- include_role:
+    name: 'ansible-role-pkg'
+  vars:
+    pkg_list: "{{ _firewall_pkgs }}"
+
+- name: 'force nftables usage'
+  lineinfile:
+    path: '/etc/firewalld/firewalld.conf'
+    regex: '^FirewallBackend='
+    line: 'FirewallBackend=nftables'
+  register: __firewall_firewalld_nftables
+
+- name: 'start the service'
+  service:
+    name: 'firewalld'
+    enabled: True
+    state: "{% if __firewall_firewalld_nftables.changed %}restarted{% else %}started{% endif %}"

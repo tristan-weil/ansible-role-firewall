@@ -1,0 +1,62 @@
+# See pf.conf(5) and /etc/examples/pf.conf
+
+# don't filter on the loopback interface
+set skip on lo
+
+# scrub incoming packets
+match in all scrub (no-df)
+
+###############
+# BLOCK
+###############
+
+# block everything
+block return in log all
+
+# block anything with no back routes
+block in quick from no-route to any
+
+# block failed URPF
+block in quick from urpf-failed to any
+
+# block abusive hosts
+table <abusive_hosts> persist
+block in quick from <abusive_hosts>
+
+{% if firewall_sshguard_enabled | bool %}
+# protect with sshguard
+table <sshguard> persist
+block in quick from <sshguard>
+{% endif %}
+
+###############
+# PASS
+###############
+
+# pass tcp, udp, and icmp out
+# tcp connections will be modulated, udp/icmp will be tracked statefully.
+pass out proto { tcp udp icmp } all modulate state
+
+# custom rules
+{% for r in __firewall_prepared_rules %}
+{{ _firewall_translations[r.state] }} \
+    {{ r.direction | default('in') }} quick {% if r.interface is defined %}on {{ r.interface }}{% endif %} {{ _firewall_translations[r.family] }} proto {{ r.proto }} \
+    from {{ _firewall_translations[r.from] | default(r.from) }} {% if r.to is defined %}to {{ _firewall_translations[r.to] | default(r.to) }}{% endif %} \
+{% if r.port is defined %}
+    port {{ r.port }} \
+{% endif %}
+{% if r.family == "inet" and r.proto == "icmp" and r.icmp_type is defined %}
+    icmp-type {{ _firewall_translations['icmp_type'][r.icmp_type] }} \
+{% elif r.family == "inet6" and r.proto == "icmp6" and r.icmp_type is defined %}
+    icmp6-type {{ _firewall_translations['icmp_type'][r.icmp_type] }} \
+{% elif r.proto == "icmp6" or r.proto == "icmp" %}
+    WRONG_CONFIGURATION_FAILED
+{% endif %}
+{% if r.state == "allow" and r.proto == "tcp" %}
+    keep state \
+{%      if r.limit is defined %}
+    (max-src-conn-rate {{ r.limit }}, overload <abusive_hosts> flush) \
+{%      endif %}
+{% endif %}
+    # eol
+{% endfor %}

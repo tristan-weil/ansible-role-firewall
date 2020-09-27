@@ -1,0 +1,119 @@
+---
+
+##############################################################################
+# Variables
+##############################################################################
+_firewall_default_sysctl: "{{ _firewall_default_sysctl_by_os_family[ ansible_facts['os_family'] ] }}"
+
+_firewall_default_rules:
+  # ssh
+  - port: '22'
+    proto: 'tcp'
+    family: 'inet'
+    from: 'any'
+    to: 'any'
+    state: 'allow'
+  - port: '22'
+    proto: 'tcp'
+    family: 'inet6'
+    from: 'any6'
+    to: 'any6'
+    state: 'allow'
+
+  # dhcpv6-client
+  - port: '546'
+    proto: 'udp'
+    family: 'inet6'
+    from: 'any6'
+    to: 'fe80::/64'
+    state: 'deny'
+
+  # icmp
+  - proto: 'icmp'
+    icmp_type: 'echoreq'
+    family: 'inet'
+    from: 'any'
+    to: 'any'
+    state: 'allow'
+
+  # icmp6 (OpenBSD)
+  - proto: 'icmp6'
+    icmp_type: 'echoreq'
+    family: 'inet6'
+    from: 'any6'
+    to: 'any6'
+    state: 'allow'
+
+_firewall_pkgs: "{{ _firewall_pkgs_by_os_family[ ansible_facts['os_family'] ] }}"
+_firewall_translations: "{{ _firewall_translations_by_os_family[ ansible_facts['os_family'] ] }}"
+
+##############################################################################
+# Distributions' dictionaries
+##############################################################################
+_firewall_pkgs_by_os_family:
+  Debian:
+    - name: 'iptables'
+      allow_upgrade: True
+      default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+    - name: 'ipset-persistent'
+      allow_upgrade: True
+      default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+    - name: 'nftables'
+      allow_upgrade: True
+      default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+    - name: 'firewalld'
+      allow_upgrade: True
+      default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+    - name: 'python3-firewall'
+      allow_upgrade: True
+    - name: 'python3-nftables'
+      allow_upgrade: True
+      default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+  OpenBSD: []
+
+_firewall_default_sysctl_by_os_family:
+  Debian:
+    - name: 'net.ipv6.conf.all.autoconf'
+      value: 0
+    - name: 'net.ipv6.conf.default.autoconf'
+      value: 0
+
+    - name: 'net.ipv6.conf.all.accept_ra'
+      value: 0
+    - name: 'net.ipv6.conf.default.accept_ra'
+      value: 0
+
+    - name: 'net.ipv4.conf.all.log_martians'
+      value: 0
+    - name: 'net.ipv4.conf.default.log_martians'
+      value: 0
+
+    - name: 'net.ipv4.icmp_echo_ignore_broadcasts'
+      value: 1
+    - name: 'net.ipv4.icmp_ignore_bogus_error_responses'
+      value: 1
+    - name: 'net.ipv4.icmp_echo_ignore_all'
+      value: 0
+
+  OpenBSD: []
+
+_firewall_translations_by_os_family:
+  Debian:
+    allow: 'enabled'
+    deny: 'disabled'
+    inet: 'ipv4'
+    inet6: 'ipv6'
+    any: '0.0.0.0/0'
+    any6: "::"
+    icmp_type:
+      echoreq: 'echo-request'
+
+  OpenBSD:
+    allow: 'pass'
+    deny: 'block'
+    inet: 'inet'
+    inet6: 'inet6'
+    any: 'any'
+    any6: 'any'
+    icmp_type:
+      echoreq: 'echoreq'

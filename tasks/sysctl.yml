@@ -1,0 +1,9 @@
+---
+
+- name: 'add new sysctl values'
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: "{{ item.state | default(omit) }}"
+    reload: True
+  loop: "{{ firewall_sysctl }}"

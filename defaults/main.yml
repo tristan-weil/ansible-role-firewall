@@ -1,0 +1,51 @@
+---
+
+firewall_sysctl: "{{ _firewall_default_sysctl }}"
+
+firewall_rules: "{{ _firewall_default_rules }}"
+firewall_whitelist: []
+
+firewall_sshguard_enabled: True
+
+# firewalld
+firewall_firewalld_interfaces_in_zones: []
+firewall_firewalld_services:
+  - name: 'ssh'
+    state: 'deny'
+    zone: 'public'
+
+  - name: 'dhcpv6-client'
+    state: 'deny'
+    zone: 'public'
+
+  - name: 'ssh'
+    state: 'deny'
+    zone: 'internal'
+
+  - name: 'samba-client'
+    state: 'deny'
+    zone: 'internal'
+
+  - name: 'mdns'
+    state: 'deny'
+    zone: 'internal'
+
+  - name: 'dhcpv6-client'
+    state: 'deny'
+    zone: 'internal'
+
+  - name: 'ssh'
+    state: 'deny'
+    zone: 'home'
+
+  - name: 'samba-client'
+    state: 'deny'
+    zone: 'home'
+
+  - name: 'mdns'
+    state: 'deny'
+    zone: 'home'
+
+  - name: 'dhcpv6-client'
+    state: 'deny'
+    zone: 'home'
