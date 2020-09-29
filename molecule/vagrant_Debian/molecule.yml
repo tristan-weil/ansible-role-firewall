@@ -26,7 +26,7 @@ provisioner:
     defaults:
       stdout_callback: 'yaml'
       bin_ansible_callbacks: True
-      interpreter_python: '/usr/bin/python3'  # TODO: force the use of python3 because firewalld libs need it
+      interpreter_python: 'python3'
   options:
     D: True
   log: True
